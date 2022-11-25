@@ -1,0 +1,208 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <conio.h>   
+#include <Windows.h>
+
+#define KEY_ESC 27
+#define KEY_UP (256 + 72)
+#define KEY_DOWN (256 + 80)
+#define KEY_LEFT (256 + 75)
+#define KEY_RIGHT (256 + 77)
+
+#define MAX 3
+int GetKey(void)
+{
+    int ch = _getch();
+
+    if (ch == 0 || ch == 224)
+        // 방향키의 경우 0 또는 224의 값이 먼저 입력됨
+        ch = 256 + _getch();
+    // 그 다음에 해당 방향키에 따라 72(Up), 
+    // 80(Down), 75(Left), 77(Right) 값이 입력됨
+    return ch;
+}
+
+void GotoXY(int x, int y)
+{
+    // COORD 구조체 변수를 통해 이동할 위치 설정
+    COORD pos = { x, y };
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
+}
+
+
+void DrawBoard(int** p);
+void Shuffle(int** p);
+void Swap(int* x, int* y);
+int CheckSuccess(void);
+
+int target_board[3][3] = { { 1, 2, 3 },{ 4, 5, 6 },{ 7, 8, 0 } };
+int current_board[3][3] = { { 1, 2, 3 },{ 4, 5, 6 },{ 7, 8, 0 } };
+int zero_x = 2, zero_y = 2;
+
+
+
+void Redraw(int x, int y, int value)
+{
+    int pos_x = y * 3;
+    int pos_y = x;
+
+    GotoXY(pos_x, pos_y);
+    if (value == 0)
+        printf("%3s", "   ");
+    else
+        printf("%3d", value);
+}
+
+int main(void)
+{
+    srand(time(NULL));
+    
+    int stop = 0;
+
+    system("cls");
+    Shuffle(current_board);
+    DrawBoard(current_board);
+
+     while (1)
+        {
+            if (_kbhit())                      // 키 입력이 있었다면
+            {
+                int key = GetKey();
+                if (key == KEY_ESC)
+                {
+                    stop = 1;
+                    break;
+                }
+                if (key == KEY_RIGHT)
+                {
+                    if (zero_x <= MAX - 2)
+                    {
+                        Swap(&current_board[zero_y][zero_x], &current_board[zero_y][zero_x+1]);
+                        Redraw(zero_y, zero_x, current_board[zero_y][zero_x]);
+                        Redraw(zero_y, zero_x + 1, current_board[zero_y][zero_x + 1]);
+                        zero_x++;
+                    }
+                }
+                else if (key == KEY_LEFT)
+                {
+                    if (zero_x >= 1)
+                    {
+                        Swap(&current_board[zero_y][zero_x], &current_board[zero_y][zero_x - 1]);
+                        Redraw(zero_y, zero_x, current_board[zero_y][zero_x]);
+                        Redraw(zero_y, zero_x - 1, current_board[zero_y][zero_x - 1]);
+                        zero_x--;
+                    }
+                }
+                else if (key == KEY_DOWN)
+                {
+                    if (zero_y <= MAX-2)
+                    {
+                        Swap(&current_board[zero_y][zero_x], &current_board[zero_y+1][zero_x]);
+                        Redraw(zero_y, zero_x, current_board[zero_y][zero_x]);
+                        Redraw(zero_y+1, zero_x, current_board[zero_y+1][zero_x]);
+                        zero_y++;
+                    }
+                }
+                else if (key == KEY_UP)
+                {
+                    if (zero_y >= 1)
+                    {
+                        Swap(&current_board[zero_y][zero_x], &current_board[zero_y - 1][zero_x]);
+                        Redraw(zero_y, zero_x, current_board[zero_y][zero_x]);
+                        Redraw(zero_y - 1, zero_x, current_board[zero_y - 1][zero_x]);
+                        zero_y--;
+                    }
+                }
+
+                if (CheckSuccess())
+                {
+                    GotoXY(0, 10);
+                    printf(">>> 성공!!!\n");
+                    break;
+                }
+            }
+       
+
+    }
+
+    printf("프로그램 종료\n");
+
+    return 0;
+}
+
+void DrawBoard(int(*p)[MAX])
+{
+    for (int i = 0; i < MAX; i++)
+    {
+        for (int j = 0; j < MAX; j++)
+        {
+            if (p[i][j] == 0)
+                printf("%3s", "   ");
+            else
+                printf("%3d", p[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+void Shuffle(int(*p)[MAX])
+{
+    for (int i = 0; i < 100; i++)
+    {
+        int direction = rand() % 4;   // 0(동), 1(서), 2(남), 3(북)
+        if (direction == 0)
+        {
+            if (zero_x <= MAX-2)
+            {
+                Swap(&current_board[zero_y][zero_x], &current_board[zero_y][zero_x+1]);
+                zero_x++;
+            }
+        }
+        else if (direction == 1)
+        {
+            if (zero_x >= 1)
+            {
+                Swap(&current_board[zero_y][zero_x], &current_board[zero_y][zero_x-1]);
+                zero_x--;
+            }
+        }
+        else if (direction == 2)
+        {
+            if (zero_y <= MAX-2)
+            {
+                Swap(&current_board[zero_y][zero_x], &current_board[zero_y+1][zero_x]);
+                zero_y++;
+            }
+        }
+        else if (direction == 3)
+        {
+            if (zero_y >= 1)
+            {
+                Swap(&current_board[zero_y][zero_x], &current_board[zero_y - 1][zero_x]);
+                zero_y--;
+            }
+        }
+    }
+}
+
+void Swap(int* x, int* y)
+{
+    int temp = *x;
+    *x = *y;
+    *y = temp;
+}
+
+int CheckSuccess(void)
+{
+    for (int i = 0; i < MAX; i++)
+    {
+        for (int j = 0; j < MAX; j++)
+        {
+            if (current_board[i][j] != target_board[i][j])
+                return 0;
+        }
+    }
+
+    return 1;
+}
